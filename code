@@ -1,0 +1,110 @@
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier
+#Upload and read  Dataset
+import csv
+
+with open("…data.csv", newline='') as csvfile:
+    data = list(csv.reader(csvfile))
+
+FeatureDataset1=data
+
+with open("…dataset.csv", newline='') as csvfile:
+    dataset = list(csv.reader(csvfile))
+
+FeatureDataset2=dataset
+
+with open("…realoutput.csv", newline='') as csvfile:
+    dataoutput = list(csv.reader(csvfile))
+
+output= dataoutput
+
+
+F= np.vstack((FeatureDataset1, FeatureDataset2)).T
+
+
+**************Ensamble (SAMME)*****************
+
+
+boosting = AdaBoostClassifier( base_estimator = DecisionTreeClassifier(max_depth = 1, max_leaf_nodes=2), 
+                            algorithm = 'SAMME',n_estimators=10, learning_rate=1.0)
+boosting.fit(F,output)
+
+boosting.score(F,output)
+
+
+**************(RAI based on Adaboost)*****************
+
+
+def RAI_AdaBoost(F,output, M=10, learningRate = 1):
+
+    N = len(y)
+    classifierList, outputpredictlist, classifierErrorList, classifierWeightList, InstancesWeightList = [], [],[],[],[]
+
+#Initialize Instances Weight Initializtion
+
+with open("…InstancesWeight.csv", newline='') as csvfile:
+    InstancesWeightdata = list(csv.reader(csvfile))
+
+InstancesWeight= InstancesWeighdata
+
+    InstancesWeightList.append(InstancesWeight.copy())
+
+
+
+for m in range(M):   
+
+        # Decision Stump  classifier 
+
+        classifier = DecisionTreeClassifier(max_depth = 1, max_leaf_nodes=2)
+
+        classifier.fit(F,output, InstancesWeight = InstancesWeight)
+
+       output_predict = classifier.predict(F)
+
+#Misclassified Instances
+
+        incorrect = (output_predict != output)
+
+        # Classifier error
+
+        classifierEerror = np.mean( np.average(incorrect, weight= InstancesWeight, axis=0))
+        
+        # Classifier weights
+
+                classifierWeight =  learning_rate * np.log((1. - classifierEerror) / classifierEerror)
+
+#Update Instances weights
+
+        InstancesWeight *= np.exp(classifierWeight * incorrect * ((InstancesWeight > 0) | (classifierWeight < 0)))
+
+        classifier_list.append(classifier)
+
+        output_predict_list.append(output_predict.copy())
+
+        classifierEerror_list.append(classifierEerror.copy())
+
+        classifierWeight_list.append(classifierWeight.copy())
+
+        InstancesWeight_list.append(InstancesWeight.copy())
+
+    classifier_list = np.asarray(classifier_list)
+
+    output_predict_list = np.asarray(output_predict_list)
+
+classifierError_list = np.asarray(classifierError_list)
+
+    classifierWeight_list = np.asarray(classifierWeight_list)
+
+      InstancesWeight _list = np.asarray(InstancesWeight _list)
+
+#classifier predication
+
+    predications = (np.array([np.sign((output_predict_list[:,point] * classifierWeight_list).sum()) for point in range(N)]))
+
+    print('score = ', (predications == output).sum() / N) 
+    
+    return classifier_list, classifierWeight_list, InstancesWeight _list
+
+
+classifier_list, classifierWeight_list, InstancesWeight _list = RAI_AdaBoost (F,output, M=10, learning_rate = 1)
